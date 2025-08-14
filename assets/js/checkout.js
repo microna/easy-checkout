@@ -46,6 +46,22 @@ jQuery(document).ready(function ($) {
         ".remove-cart-item",
         this.removeFromCart.bind(this)
       );
+      // Checkout order review inline controls
+      $(document).on(
+        "click",
+        ".ec-qty-btn",
+        this.handleLineItemQtyButton.bind(this)
+      );
+      $(document).on(
+        "change",
+        ".ec-cart-qty-input",
+        this.handleLineItemQtyInput.bind(this)
+      );
+      $(document).on(
+        "click",
+        ".ec-remove-item",
+        this.removeFromCart.bind(this)
+      );
       $(document).on(
         "click",
         "#proceed-to-checkout",
@@ -71,6 +87,68 @@ jQuery(document).ready(function ($) {
         if (parseInt($input.val()) > 0) {
           $addBtn.show();
         }
+      });
+    },
+
+    // Inline checkout order-review quantity button handler
+    handleLineItemQtyButton: function (e) {
+      e.preventDefault();
+      const $btn = jQuery(e.currentTarget);
+      const cartItemKey = $btn.data("cart-item-key");
+      const $wrapper = $btn.closest(".ec-quantity-controls");
+      const $input = $wrapper.find(".ec-cart-qty-input");
+      const action = $btn.data("action");
+      let qty = parseInt($input.val(), 10) || 1;
+
+      if (action === "increase") qty = Math.min(qty + 1, 99);
+      if (action === "decrease") qty = Math.max(qty - 1, 1);
+
+      $input.val(qty);
+      this.updateCartItemQuantity(cartItemKey, qty, $btn);
+    },
+
+    // Inline checkout order-review quantity input handler
+    handleLineItemQtyInput: function (e) {
+      const $input = jQuery(e.currentTarget);
+      const cartItemKey = $input.data("cart-item-key");
+      let qty = parseInt($input.val(), 10) || 1;
+      if (qty < 1) qty = 1;
+      if (qty > 99) qty = 99;
+      $input.val(qty);
+      this.updateCartItemQuantity(cartItemKey, qty, $input);
+    },
+
+    // AJAX: update cart item quantity
+    updateCartItemQuantity: function (cartItemKey, quantity, $triggerEl) {
+      if (!cartItemKey) return;
+      if ($triggerEl && $triggerEl.prop) $triggerEl.prop("disabled", true);
+
+      jQuery.ajax({
+        url: custom_checkout_params.ajax_url,
+        type: "POST",
+        data: {
+          action: "easy_checkout_update_cart_quantity",
+          cart_item_key: cartItemKey,
+          quantity: quantity,
+          nonce: custom_checkout_params.nonce,
+        },
+        success: (response) => {
+          if (response && response.success) {
+            this.refreshCheckoutReview();
+            showNotification("Cart updated", "success");
+          } else {
+            showNotification(
+              (response && response.data) || "Failed to update cart",
+              "error"
+            );
+          }
+        },
+        error: () => {
+          showNotification("Failed to update cart", "error");
+        },
+        complete: () => {
+          if ($triggerEl && $triggerEl.prop) $triggerEl.prop("disabled", false);
+        },
       });
     },
 
@@ -188,7 +266,7 @@ jQuery(document).ready(function ($) {
 
     removeFromCart: function (e) {
       e.preventDefault();
-      const $btn = $(e.target);
+      const $btn = $(e.currentTarget);
       const cartItemKey = $btn.data("cart-item-key");
 
       $btn.prop("disabled", true);
@@ -209,6 +287,7 @@ jQuery(document).ready(function ($) {
             if (response.data.cart_count === 0) {
               this.hideCheckoutForm();
             }
+            this.refreshCheckoutReview();
           } else {
             showNotification(
               response.data || "Failed to remove product",
@@ -263,6 +342,11 @@ jQuery(document).ready(function ($) {
       } else {
         $cartSummary.hide();
       }
+    },
+
+    // Trigger WooCommerce checkout fragments refresh
+    refreshCheckoutReview: function () {
+      jQuery(document.body).trigger("update_checkout");
     },
 
     proceedToCheckout: function (e) {

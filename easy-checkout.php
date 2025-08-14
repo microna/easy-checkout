@@ -385,6 +385,56 @@ function easy_checkout_get_payment_methods() {
     ));
 }
 
+/**
+ * Inject quantity and remove controls into each cart line item on checkout
+ */
+add_filter('woocommerce_cart_item_name', 'easy_checkout_render_item_controls', 10, 3);
+
+function easy_checkout_render_item_controls($product_name, $cart_item, $cart_item_key) {
+    if (!function_exists('is_checkout') || !is_checkout() || is_wc_endpoint_url()) {
+        return $product_name;
+    }
+
+    $quantity = isset($cart_item['quantity']) ? (int) $cart_item['quantity'] : 1;
+
+    $controls  = '<div class="ec-quantity-controls" data-cart-item-key="' . esc_attr($cart_item_key) . '">';
+    $controls .= '<button type="button" class="ec-qty-btn" data-action="decrease" data-cart-item-key="' . esc_attr($cart_item_key) . '">-</button>';
+    $controls .= '<input type="number" class="ec-cart-qty-input" data-cart-item-key="' . esc_attr($cart_item_key) . '" min="1" max="99" value="' . esc_attr($quantity) . '">';
+    $controls .= '<button type="button" class="ec-qty-btn" data-action="increase" data-cart-item-key="' . esc_attr($cart_item_key) . '">+</button>';
+    $controls .= '<button type="button" class="ec-remove-item" data-cart-item-key="' . esc_attr($cart_item_key) . '" aria-label="' . esc_attr__('Remove item', 'easy-checkout') . '">&times;</button>';
+    $controls .= '</div>';
+
+    return $product_name . $controls;
+}
+
+// AJAX: Update cart item quantity
+add_action('wp_ajax_easy_checkout_update_cart_quantity', 'easy_checkout_update_cart_quantity');
+add_action('wp_ajax_nopriv_easy_checkout_update_cart_quantity', 'easy_checkout_update_cart_quantity');
+
+function easy_checkout_update_cart_quantity() {
+    check_ajax_referer('custom_checkout_nonce', 'nonce');
+
+    $cart_item_key = isset($_POST['cart_item_key']) ? sanitize_text_field(wp_unslash($_POST['cart_item_key'])) : '';
+    $quantity      = isset($_POST['quantity']) ? intval($_POST['quantity']) : -1;
+
+    if (empty($cart_item_key) || $quantity < 1) {
+        wp_send_json_error(__('Invalid cart item or quantity.', 'easy-checkout'));
+    }
+
+    $result = WC()->cart->set_quantity($cart_item_key, $quantity);
+
+    if (!$result) {
+        wp_send_json_error(__('Failed to update cart.', 'easy-checkout'));
+    }
+
+    WC()->cart->calculate_totals();
+
+    wp_send_json_success(array(
+        'cart_count' => WC()->cart->get_cart_contents_count(),
+        'cart_total' => WC()->cart->get_cart_total(),
+    ));
+}
+
 // Custom checkout fields - simplified version
 add_filter('woocommerce_checkout_fields', 'customize_checkout_fields');
 
