@@ -30,12 +30,19 @@ class Easy_Checkout_Cart_Controller {
         }
 
         $quantity = isset($cart_item['quantity']) ? (int) $cart_item['quantity'] : 1;
+        $product  = isset($cart_item['data']) ? $cart_item['data'] : null;
+        $max_qty  = $product && is_object($product) && method_exists($product, 'get_max_purchase_quantity')
+            ? (int) $product->get_max_purchase_quantity()
+            : 99;
+        if ($max_qty <= 0) {
+            $max_qty = $quantity; // Prevent increasing if max unknown/zero
+        }
 
-        $controls  = '<div class="ec-quantity-controls" data-cart-item-key="' . esc_attr($cart_item_key) . '">';
+        $controls  = '<div class="ec-quantity-controls" data-cart-item-key="' . esc_attr($cart_item_key) . '" data-max-qty="' . esc_attr($max_qty) . '">';
         $controls .= '<button type="button" class="ec-qty-btn" data-action="decrease" data-cart-item-key="' . esc_attr($cart_item_key) . '">-</button>';
-        $controls .= '<input type="number" class="ec-cart-qty-input" data-cart-item-key="' . esc_attr($cart_item_key) . '" min="1" max="99" value="' . esc_attr($quantity) . '">';
-        $controls .= '<button type="button" class="ec-qty-btn" data-action="increase" data-cart-item-key="' . esc_attr($cart_item_key) . '">+</button>';
-        $controls .= '<button type="button" class="ec-remove-item" data-cart-item-key="' . esc_attr($cart_item_key) . '" aria-label="' . esc_attr__('Remove item', 'easy-checkout') . '">&times;</button>';
+        $controls .= '<input type="number" class="ec-cart-qty-input" data-cart-item-key="' . esc_attr($cart_item_key) . '" min="1" max="' . esc_attr($max_qty) . '" value="' . esc_attr($quantity) . '">';
+        $controls .= '<button type="button" class="ec-qty-btn" data-action="increase" data-cart-item-key="' . esc_attr($cart_item_key) . '" ' . ($quantity >= $max_qty ? 'disabled' : '') . '>+</button>';
+        $controls .= '<button type="button" class="ec-remove-item" data-cart-item-key="' . esc_attr($cart_item_key) . '" aria-label="' . esc_attr__('Remove item', 'easy-checkout') . '"><span class="remove-icon">&times;</span></button>';
         $controls .= '</div>';
 
         return $product_name . $controls;
@@ -52,6 +59,13 @@ class Easy_Checkout_Cart_Controller {
         if (!$product || !$product->is_purchasable()) {
             wp_send_json_error(__('This product cannot be purchased.', 'easy-checkout'));
         }
+        // Stock/max purchase guard
+        if (method_exists($product, 'get_max_purchase_quantity')) {
+            $max_allowed = (int) $product->get_max_purchase_quantity();
+            if ($max_allowed > 0 && $quantity > $max_allowed) {
+                wp_send_json_error(sprintf(__('Only %d units available in stock.', 'easy-checkout'), $max_allowed));
+            }
+        }
         $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity);
         if (!$cart_item_key) {
             wp_send_json_error(__('Failed to add product to cart.', 'easy-checkout'));
@@ -65,6 +79,17 @@ class Easy_Checkout_Cart_Controller {
         $quantity      = isset($_POST['quantity']) ? intval($_POST['quantity']) : -1;
         if (empty($cart_item_key) || $quantity < 0) {
             wp_send_json_error(__('Invalid cart item or quantity.', 'easy-checkout'));
+        }
+        // Enforce stock/max purchase limits
+        $cart = WC()->cart->get_cart();
+        if (isset($cart[$cart_item_key])) {
+            $product = isset($cart[$cart_item_key]['data']) ? $cart[$cart_item_key]['data'] : null;
+            if ($product && method_exists($product, 'get_max_purchase_quantity')) {
+                $max_allowed = (int) $product->get_max_purchase_quantity();
+                if ($max_allowed > 0 && $quantity > $max_allowed) {
+                    wp_send_json_error(sprintf(__('Only %d units available in stock.', 'easy-checkout'), $max_allowed));
+                }
+            }
         }
         $result = $quantity === 0
             ? WC()->cart->remove_cart_item($cart_item_key)

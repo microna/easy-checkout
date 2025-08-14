@@ -1,0 +1,82 @@
+/* Minimal styles for quantity controls and notifications */
+.ec-quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px
+}
+
+.ec-qty-btn {
+    width: 28px;
+    height: 28px;
+    line-height: 26px;
+    text-align: center;
+    border: 1px solid #ddd;
+    background: #f7f7f7;
+    border-radius: 4px;
+    cursor: pointer
+}
+
+.ec-cart-qty-input {
+    width: 48px;
+    text-align: center;
+    height: 28px;
+    border: 1px solid #ddd;
+    border-radius: 4px
+}
+
+.ec-remove-item {
+    background: none;
+    border: none;
+    color: #aa0000;
+    font-size: 18px;
+    cursor: pointer;
+    margin-left: 8px;
+    display: inline-flex;
+    align-items: center
+}
+
+.ec-remove-item .remove-icon {
+    pointer-events: none
+}
+
+.easy-checkout-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #fff;
+    border-left: 4px solid #0073aa;
+    padding: 15px 20px;
+    border-radius: 0 6px 6px 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, .1);
+    z-index: 10000;
+    transform: translateX(400px);
+    transition: transform .3s ease;
+    max-width: 350px;
+    font-size: 14px;
+    line-height: 1.4
+}
+
+.easy-checkout-notification.show {
+    transform: translateX(0)
+}
+
+.easy-checkout-notification.error {
+    border-left-color: #e74c3c
+}
+
+.easy-checkout-notification.success {
+    border-left-color: #27ae60
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    float: right;
+    margin-left: 10px;
+    color: #999;
+    padding: 0;
+    line-height: 1
+}
