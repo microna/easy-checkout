@@ -47,11 +47,7 @@ class Easy_Checkout {
         add_action('woocommerce_checkout_process', array($this, 'ensure_shipping_method'));
         add_action('woocommerce_checkout_update_order_review', array($this, 'update_shipping_methods'));
         
-        // Add checkout redirect functionality
-        add_action('template_redirect', array($this, 'redirect_to_custom_checkout'));
-        
-        // Override checkout URL to always point to our custom checkout
-        add_filter('woocommerce_get_checkout_url', array($this, 'override_checkout_url'));
+        // No redirect needed - we override the template directly
         
         // Admin notices
         add_action('admin_notices', array($this, 'show_activation_notice'));
@@ -108,7 +104,7 @@ class Easy_Checkout {
     public function custom_checkout_template($template, $template_name, $template_path) {
         // Replace the checkout form template
         if ($template_name == 'checkout/form-checkout.php') {
-            $custom_template = $this->plugin_path . 'templates/checkout/form-checkout.php';
+            $custom_template = $this->plugin_path . 'templates/form-checkout.php';
             if (file_exists($custom_template)) {
                 return $custom_template;
             }
@@ -125,132 +121,30 @@ class Easy_Checkout {
     }
     
     public function activate() {
-        // Store original checkout page ID before replacing
-        $this->store_original_checkout_page();
-        
-        // Create custom checkout page and set it as the default
-        $this->create_custom_checkout_page();
-        
-        // Flush rewrite rules on activation
+        // Just flush rewrite rules and show activation notice
+        // No need to create pages - we'll override the template directly
         flush_rewrite_rules();
-        
-        // Show activation notice
         add_option('easy_checkout_activation_notice', true);
     }
     
     public function deactivate() {
-        // Restore original checkout page
-        $this->restore_original_checkout_page();
-        
-        // Flush rewrite rules on deactivation
+        // Just flush rewrite rules on deactivation
+        // No need to restore pages - we only override templates
         flush_rewrite_rules();
-        
-        // Clean up custom checkout page (optional - you might want to keep it)
-        $this->cleanup_custom_checkout_page();
-    }
-    
-    private function store_original_checkout_page() {
-        $original_checkout_page_id = get_option('woocommerce_checkout_page_id');
-        if ($original_checkout_page_id) {
-            update_option('easy_checkout_original_page_id', $original_checkout_page_id);
-        }
-    }
-    
-    private function restore_original_checkout_page() {
-        $original_checkout_page_id = get_option('easy_checkout_original_page_id');
-        if ($original_checkout_page_id) {
-            update_option('woocommerce_checkout_page_id', $original_checkout_page_id);
-            delete_option('easy_checkout_original_page_id');
-        }
-    }
-    
-    private function create_custom_checkout_page() {
-        // Check if custom checkout page already exists
-        $checkout_page = get_page_by_title('Easy Checkout');
-        
-        if (!$checkout_page) {
-            $checkout_page_data = array(
-                'post_title'    => 'Easy Checkout',
-                'post_content'  => '[woocommerce_checkout]',
-                'post_status'   => 'publish',
-                'post_type'     => 'page',
-                'post_slug'     => 'easy-checkout',
-                'post_excerpt'  => 'Custom checkout page created by Easy Checkout plugin'
-            );
-            
-            $page_id = wp_insert_post($checkout_page_data);
-            
-            // Set as WooCommerce checkout page
-            if ($page_id) {
-                update_option('woocommerce_checkout_page_id', $page_id);
-                update_option('easy_checkout_custom_page_id', $page_id);
-                
-                // Add page meta to identify it as our custom page
-                update_post_meta($page_id, '_easy_checkout_custom_page', true);
-            }
-        } else {
-            // Page exists, just set it as the checkout page
-            update_option('woocommerce_checkout_page_id', $checkout_page->ID);
-            update_option('easy_checkout_custom_page_id', $checkout_page->ID);
-            update_post_meta($checkout_page->ID, '_easy_checkout_custom_page', true);
-        }
-    }
-    
-    private function cleanup_custom_checkout_page() {
-        // Optional: Remove the custom checkout page when plugin is deactivated
-        // Uncomment the lines below if you want to delete the page on deactivation
-        
-        /*
-        $custom_page_id = get_option('easy_checkout_custom_page_id');
-        if ($custom_page_id) {
-            wp_delete_post($custom_page_id, true);
-            delete_option('easy_checkout_custom_page_id');
-        }
-        */
-    }
-    
-
-    
-    public function redirect_to_custom_checkout() {
-        // Only redirect if we're on a checkout page that's not our custom one
-        if (is_checkout() && !is_wc_endpoint_url()) {
-            $custom_page_id = get_option('easy_checkout_custom_page_id');
-            $current_page_id = get_the_ID();
-            
-            // If we're not on our custom checkout page, redirect to it
-            if ($custom_page_id && $current_page_id != $custom_page_id) {
-                $custom_checkout_url = get_permalink($custom_page_id);
-                if ($custom_checkout_url) {
-                    wp_redirect($custom_checkout_url);
-                    exit;
-                }
-            }
-        }
-    }
-    
-    public function override_checkout_url($checkout_url) {
-        $custom_page_id = get_option('easy_checkout_custom_page_id');
-        if ($custom_page_id) {
-            $custom_checkout_url = get_permalink($custom_page_id);
-            if ($custom_checkout_url) {
-                return $custom_checkout_url;
-            }
-        }
-        return $checkout_url;
     }
     
     public function show_activation_notice() {
         if (get_option('easy_checkout_activation_notice')) {
-            $custom_page_id = get_option('easy_checkout_custom_page_id');
-            $checkout_url = $custom_page_id ? get_permalink($custom_page_id) : '';
+            $checkout_page_id = get_option('woocommerce_checkout_page_id');
+            $checkout_url = $checkout_page_id ? get_permalink($checkout_page_id) : wc_get_checkout_url();
             
             echo '<div class="notice notice-success is-dismissible">';
             echo '<p><strong>Easy Checkout Plugin Activated!</strong></p>';
-            echo '<p>Your WooCommerce checkout page has been automatically replaced with the Easy Checkout page.</p>';
+            echo '<p>Your existing WooCommerce checkout page now uses the Easy Checkout template.</p>';
             if ($checkout_url) {
-                echo '<p><a href="' . esc_url($checkout_url) . '" target="_blank">View your new checkout page</a></p>';
+                echo '<p><a href="' . esc_url($checkout_url) . '" target="_blank">View your enhanced checkout page</a></p>';
             }
-            echo '<p><em>Note: The original checkout page will be restored when you deactivate this plugin.</em></p>';
+            echo '<p><em>The plugin replaces the checkout template without creating new pages.</em></p>';
             echo '</div>';
             
             // Remove the notice after showing it once
@@ -362,7 +256,7 @@ function easy_checkout_add_to_cart() {
     $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity);
     
     if ($cart_item_key) {
-        // Get updated cart data
+        // Get updated cart 
         $cart_data = array(
             'cart_count' => WC()->cart->get_cart_contents_count(),
             'cart_total' => WC()->cart->get_cart_total(),

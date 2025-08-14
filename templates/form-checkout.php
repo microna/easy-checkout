@@ -16,63 +16,9 @@ if (!$checkout->is_registration_enabled() && $checkout->is_registration_required
 ?>
 
 <div class="easy-checkout-wrapper">
-    <h2 class="checkout-title"><?php _e('Easy Checkout', 'easy-checkout'); ?></h2>
-
-    <!-- Product Selection Section -->
-    <?php if (WC()->cart->is_empty()) : ?>
-    <div class="product-selection-section">
-        <h3 class="section-title"><?php _e('Select Products', 'easy-checkout'); ?></h3>
-        <div class="products-grid" id="products-grid">
-            <?php
-            // Get published products
-            $products = wc_get_products(array(
-                'status' => 'publish',
-                'limit' => 12,
-                'orderby' => 'popularity'
-            ));
-            
-            foreach ($products as $product) :
-                $product_id = $product->get_id();
-                $product_name = $product->get_name();
-                $product_price = $product->get_price_html();
-                $product_image = $product->get_image('thumbnail');
-                $add_to_cart_url = $product->add_to_cart_url();
-            ?>
-            <div class="product-item" data-product-id="<?php echo esc_attr($product_id); ?>">
-                <div class="product-image">
-                    <?php echo $product_image; ?>
-                </div>
-                <div class="product-details">
-                    <h4 class="product-title"><?php echo esc_html($product_name); ?></h4>
-                    <div class="product-price"><?php echo $product_price; ?></div>
-                    <div class="quantity-controls">
-                        <button type="button" class="qty-btn minus" data-action="decrease">-</button>
-                        <input type="number" class="product-quantity" value="0" min="0" max="99"
-                            data-product-id="<?php echo esc_attr($product_id); ?>">
-                        <button type="button" class="qty-btn plus" data-action="increase">+</button>
-                    </div>
-                    <button type="button" class="add-to-cart-btn" data-product-id="<?php echo esc_attr($product_id); ?>"
-                        style="display: none;">
-                        <?php _e('Add to Cart', 'easy-checkout'); ?>
-                    </button>
-                </div>
-            </div>
-            <?php endforeach; ?>
-        </div>
-
-        <div class="cart-summary" id="cart-summary" style="display: none;">
-            <h4><?php _e('Cart Summary', 'easy-checkout'); ?></h4>
-            <div class="cart-items" id="cart-items"></div>
-            <div class="cart-total" id="cart-total"></div>
-            <button type="button" class="proceed-to-checkout-btn" id="proceed-to-checkout">
-                <?php _e('Proceed to Checkout', 'easy-checkout'); ?>
-            </button>
-        </div>
-    </div>
-    <?php endif; ?>
+    <h2 class="checkout-title"><?php _e('Checkout', 'easy-checkout'); ?></h2>
 
     <form name="checkout" method="post" class="checkout woocommerce-checkout"
-        <?php echo WC()->cart->is_empty() ? 'style="display: none;"' : ''; ?>
         action="<?php echo esc_url(wc_get_checkout_url()); ?>" enctype="multipart/form-data">
 
         <div class="checkout-container">
@@ -93,16 +39,6 @@ if (!$checkout->is_registration_enabled() && $checkout->is_registration_required
                     </div>
                 </div>
 
-                <?php if (WC()->cart->needs_shipping() && WC()->cart->show_shipping()) : ?>
-                <div class="checkout-section shipping-methods">
-                    <h3 class="section-title"><?php _e('Shipping Method', 'easy-checkout'); ?></h3>
-
-                    <div class="shipping-methods-wrapper">
-                        <?php wc_cart_totals_shipping_html(); ?>
-                    </div>
-                </div>
-                <?php endif; ?>
-
                 <?php endif; ?>
             </div>
 
@@ -117,42 +53,11 @@ if (!$checkout->is_registration_enabled() && $checkout->is_registration_required
 
                     <!-- Payment Methods Section -->
                     <?php if (WC()->cart->needs_payment()) : ?>
-                    <div class="checkout-section payment-methods">
-                        <h3 class="section-title"><?php _e('Choose Payment Method', 'easy-checkout'); ?></h3>
+                    <div class="payment-section">
+                        <h3 class="section-title"><?php _e('Payment Method', 'easy-checkout'); ?></h3>
 
-                        <div class="payment-methods-wrapper">
-                            <div id="payment" class="woocommerce-checkout-payment">
-                                <?php
-                                // Get available payment gateways
-                                $available_gateways = WC()->payment_gateways->get_available_payment_gateways();
-                                
-                                if (!empty($available_gateways)) {
-                                    echo '<div class="payment-methods-list">';
-                                    echo '<p class="payment-instruction">' . __('Please select your preferred payment method:', 'easy-checkout') . '</p>';
-                                    
-                                    // Display payment methods
-                                    woocommerce_checkout_payment();
-                                    
-                                    echo '</div>';
-                                } else {
-                                    echo '<div class="no-payment-methods">';
-                                    echo '<p>' . __('No payment methods are currently available. Please contact us for assistance.', 'easy-checkout') . '</p>';
-                                    echo '</div>';
-                                }
-                                ?>
-                            </div>
-
-                            <div class="payment-security-notice">
-                                <div class="security-icons">
-                                    <span
-                                        class="security-text"><?php _e('Your payment information is secure and encrypted', 'easy-checkout'); ?></span>
-                                    <div class="security-badges">
-                                        <span class="badge ssl"><?php _e('SSL Secure', 'easy-checkout'); ?></span>
-                                        <span
-                                            class="badge encrypted"><?php _e('256-bit Encryption', 'easy-checkout'); ?></span>
-                                    </div>
-                                </div>
-                            </div>
+                        <div id="payment" class="woocommerce-checkout-payment">
+                            <?php woocommerce_checkout_payment(); ?>
                         </div>
                     </div>
                     <?php endif; ?>
