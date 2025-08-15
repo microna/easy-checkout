@@ -12,7 +12,7 @@
       const $radio = $(e.currentTarget);
       const method = $radio.val();
       const $box = $(`.payment_box.payment_method_${method}`);
-      $(".payment_box").slideUp(300);
+      $(".payment_box").hide();
       if ($box.length) $box.slideDown(300);
       const text = $radio.data("order_button_text");
       $("#place_order").text(text || "Place Order");

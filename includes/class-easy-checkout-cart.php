@@ -39,9 +39,7 @@ class Easy_Checkout_Cart_Controller {
         }
 
         $controls  = '<div class="ec-quantity-controls" data-cart-item-key="' . esc_attr($cart_item_key) . '" data-max-qty="' . esc_attr($max_qty) . '">';
-        $controls .= '<button type="button" class="ec-qty-btn" data-action="decrease" data-cart-item-key="' . esc_attr($cart_item_key) . '">-</button>';
         $controls .= '<input type="number" class="ec-cart-qty-input" data-cart-item-key="' . esc_attr($cart_item_key) . '" min="1" max="' . esc_attr($max_qty) . '" value="' . esc_attr($quantity) . '">';
-        $controls .= '<button type="button" class="ec-qty-btn" data-action="increase" data-cart-item-key="' . esc_attr($cart_item_key) . '" ' . ($quantity >= $max_qty ? 'disabled' : '') . '>+</button>';
         $controls .= '<button type="button" class="ec-remove-item" data-cart-item-key="' . esc_attr($cart_item_key) . '" aria-label="' . esc_attr__('Remove item', 'easy-checkout') . '"><span class="remove-icon">&times;</span></button>';
         $controls .= '</div>';
 
@@ -145,4 +143,3 @@ class Easy_Checkout_Cart_Controller {
         return $cart_data;
     }
 }
-

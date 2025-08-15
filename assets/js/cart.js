@@ -2,7 +2,6 @@
 (function ($, EC) {
   const Cart = {
     init() {
-      $(document).on("click", ".qty-btn", this.onProductCardQtyBtn.bind(this));
       $(document).on(
         "change",
         ".product-quantity",
@@ -14,19 +13,22 @@
         ".remove-cart-item",
         this.removeFromCart.bind(this)
       );
-      // Support order review remove control
       $(document).on(
         "click",
         ".ec-remove-item",
         this.removeFromCart.bind(this)
       );
 
-      // Order review inline controls
-      $(document).on("click", ".ec-qty-btn", this.onLineItemQtyBtn.bind(this));
       $(document).on(
-        "change",
+        "change blur",
         ".ec-cart-qty-input",
         this.onLineItemQtyInput.bind(this)
+      );
+
+      $(document).on(
+        "input",
+        ".ec-cart-qty-input",
+        this.onLineItemQtyInputRealtime.bind(this)
       );
     },
 
@@ -47,20 +49,6 @@
       });
     },
 
-    // Product list/cart summary controls
-    onProductCardQtyBtn(e) {
-      e.preventDefault();
-      const $btn = $(e.currentTarget);
-      const $item = $btn.closest(".product-item");
-      const $input = $item.find(".product-quantity");
-      const $addBtn = $item.find(".add-to-cart-btn");
-      const action = $btn.data("action");
-      let qty = parseInt($input.val(), 10) || 0;
-      qty =
-        action === "increase" ? Math.min(qty + 1, 99) : Math.max(qty - 1, 0);
-      $input.val(qty);
-      qty > 0 ? $addBtn.show() : $addBtn.hide();
-    },
     onProductCardQtyInput(e) {
       const $input = $(e.currentTarget);
       const $item = $input.closest(".product-item");
@@ -93,6 +81,11 @@
             EC.notify("Product added to cart!", "success");
             $input.val(0);
             $btn.hide();
+
+            if ($(".easy-checkout-cart-section").is(":hidden")) {
+              $(".easy-checkout-cart-section").fadeIn(300);
+            }
+
             $(document.body).trigger("update_checkout");
           } else {
             EC.notify(
@@ -123,8 +116,10 @@
         success: (response) => {
           if (response && response.success) {
             EC.notify("Product removed from cart", "success");
-            if (response.data && response.data.cart_count === 0)
+            if (response.data && response.data.cart_count === 0) {
               $(".checkout.woocommerce-checkout").hide();
+              $(".easy-checkout-cart-section").fadeOut(300);
+            }
             $(document.body).trigger("update_checkout");
           } else {
             EC.notify(
@@ -138,21 +133,6 @@
       });
     },
 
-    // Order review inline quantity controls
-    onLineItemQtyBtn(e) {
-      e.preventDefault();
-      const $btn = $(e.currentTarget);
-      const $wrapper = $btn.closest(".ec-quantity-controls");
-      const $input = $wrapper.find(".ec-cart-qty-input");
-      const action = $btn.data("action");
-      const key = $btn.data("cart-item-key");
-      let qty = parseInt($input.val(), 10) || 1;
-      const max = parseInt($wrapper.data("max-qty"), 10) || 99;
-      if (action === "increase") qty = Math.min(qty + 1, max);
-      if (action === "decrease") qty = Math.max(qty - 1, 1);
-      $input.val(qty);
-      this.updateQuantity(key, qty, $btn);
-    },
     onLineItemQtyInput(e) {
       const $input = $(e.currentTarget);
       const key = $input.data("cart-item-key");
@@ -160,10 +140,27 @@
       const max =
         parseInt($input.closest(".ec-quantity-controls").data("max-qty"), 10) ||
         99;
+
       if (qty < 1) qty = 1;
       if (qty > max) qty = max;
       $input.val(qty);
+
       this.updateQuantity(key, qty, $input);
+    },
+
+    // Real-time input handler (debounced)
+    onLineItemQtyInputRealtime(e) {
+      const $input = $(e.currentTarget);
+
+      // Clear existing timeout
+      clearTimeout($input.data("update-timeout"));
+
+      // Set new timeout for debounced update
+      const timeout = setTimeout(() => {
+        this.onLineItemQtyInput(e);
+      }, 1000); // Wait 1 second after user stops typing
+
+      $input.data("update-timeout", timeout);
     },
     updateQuantity(cartItemKey, quantity, $el) {
       if (!cartItemKey) return;
@@ -178,6 +175,15 @@
         success: (response) => {
           if (response && response.success) {
             EC.notify("Cart updated", "success");
+
+            // Hide cart section if cart becomes empty
+            if (response.data && response.data.cart_count === 0) {
+              $(".easy-checkout-cart-section").fadeOut(300);
+            } else {
+              // Update cart section totals without full page refresh
+              this.updateCartTotals();
+            }
+
             $(document.body).trigger("update_checkout");
           } else {
             EC.notify(
@@ -188,6 +194,57 @@
         },
         complete: () => $el.prop("disabled", false),
         error: () => EC.notify("Failed to update cart", "error"),
+      });
+    },
+
+    // Update cart totals by fetching fresh data from server
+    updateCartTotals() {
+      EC.utils.ajax({
+        data: {
+          action: "easy_checkout_get_cart",
+          nonce: custom_checkout_params.nonce,
+        },
+        success: (response) => {
+          if (response && response.success && response.data) {
+            const cartData = response.data;
+
+            // Update line totals for each item
+            cartData.cart_items.forEach((item) => {
+              const $itemRow = $(
+                `.cart-review-item[data-cart-item-key="${item.key}"]`
+              );
+              if ($itemRow.length) {
+                $itemRow.find(".total-amount").html(item.subtotal);
+                $itemRow.find(".ec-cart-qty-input").val(item.quantity);
+              }
+            });
+
+            // Update cart totals
+            $(".cart-summary-totals .subtotal-row .amount").html(
+              cartData.cart_subtotal
+            );
+            $(".cart-summary-totals .total-row .amount").html(
+              cartData.cart_total
+            );
+
+            // Update simple order summary if it exists
+            $(".summary-totals .summary-row:first-child .value").text(
+              cartData.cart_count
+            );
+            $(".order-summary-simple .subtotal-row .value").html(
+              cartData.cart_subtotal
+            );
+            $(".order-summary-simple .total-row .value").html(
+              cartData.cart_total
+            );
+          }
+        },
+        error: () => {
+          // If AJAX fails, fall back to page refresh after a delay
+          setTimeout(() => {
+            location.reload();
+          }, 1000);
+        },
       });
     },
   };
