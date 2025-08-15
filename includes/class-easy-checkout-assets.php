@@ -67,11 +67,9 @@ class Easy_Checkout_Assets {
             true
         );
 
-        // Localize data for AJAX to core so all modules can use it
         wp_localize_script('easy-checkout-core', 'custom_checkout_params', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('custom_checkout_nonce'),
         ));
     }
 }
-

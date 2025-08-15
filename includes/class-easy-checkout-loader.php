@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin loader / bootstrap
+ * Plugin loader 
  */
 
 defined('ABSPATH') || exit;
@@ -38,4 +38,3 @@ class Easy_Checkout_Loader {
         $this->validation->register_hooks();
     }
 }
-

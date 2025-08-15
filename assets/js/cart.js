@@ -148,17 +148,14 @@
       this.updateQuantity(key, qty, $input);
     },
 
-    // Real-time input handler (debounced)
     onLineItemQtyInputRealtime(e) {
       const $input = $(e.currentTarget);
 
-      // Clear existing timeout
       clearTimeout($input.data("update-timeout"));
 
-      // Set new timeout for debounced update
       const timeout = setTimeout(() => {
         this.onLineItemQtyInput(e);
-      }, 1000); // Wait 1 second after user stops typing
+      }, 1000); 
 
       $input.data("update-timeout", timeout);
     },
@@ -176,11 +173,9 @@
           if (response && response.success) {
             EC.notify("Cart updated", "success");
 
-            // Hide cart section if cart becomes empty
             if (response.data && response.data.cart_count === 0) {
               $(".easy-checkout-cart-section").fadeOut(300);
             } else {
-              // Update cart section totals without full page refresh
               this.updateCartTotals();
             }
 
@@ -197,7 +192,6 @@
       });
     },
 
-    // Update cart totals by fetching fresh data from server
     updateCartTotals() {
       EC.utils.ajax({
         data: {
@@ -208,7 +202,6 @@
           if (response && response.success && response.data) {
             const cartData = response.data;
 
-            // Update line totals for each item
             cartData.cart_items.forEach((item) => {
               const $itemRow = $(
                 `.cart-review-item[data-cart-item-key="${item.key}"]`
@@ -219,7 +212,6 @@
               }
             });
 
-            // Update cart totals
             $(".cart-summary-totals .subtotal-row .amount").html(
               cartData.cart_subtotal
             );
@@ -240,7 +232,6 @@
           }
         },
         error: () => {
-          // If AJAX fails, fall back to page refresh after a delay
           setTimeout(() => {
             location.reload();
           }, 1000);
