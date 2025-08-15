@@ -56,40 +56,42 @@ class Easy_Checkout_Admin {
      */
     public function admin_page() {
         ?>
-        <div class="wrap">
-            <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-            <div class="easy-checkout-admin-content">
-                <div class="postbox">
-                    <h2 class="hndle"><?php _e('Easy Checkout Overview', 'easy-checkout'); ?></h2>
-                    <div class="inside">
-                        <p><?php _e('Easy Checkout simplifies your WooCommerce checkout process with advanced cart management and quantity controls.', 'easy-checkout'); ?></p>
-                        
-                        <h3><?php _e('Features', 'easy-checkout'); ?></h3>
-                        <ul>
-                            <li><?php _e('Simplified checkout form with only essential fields', 'easy-checkout'); ?></li>
-                            <li><?php _e('Real-time cart quantity controls', 'easy-checkout'); ?></li>
-                            <li><?php _e('AJAX-powered cart updates', 'easy-checkout'); ?></li>
-                            <li><?php _e('Mobile-responsive design', 'easy-checkout'); ?></li>
-                            <li><?php _e('HPOS (High-Performance Order Storage) compatible', 'easy-checkout'); ?></li>
-                        </ul>
-                        
-                        <p>
-                            <a href="<?php echo admin_url('admin.php?page=easy-checkout-settings'); ?>" class="button button-primary">
-                                <?php _e('Configure Settings', 'easy-checkout'); ?>
-                            </a>
-                        </p>
-                    </div>
-                </div>
-                
-                <div class="postbox">
-                    <h2 class="hndle"><?php _e('System Status', 'easy-checkout'); ?></h2>
-                    <div class="inside">
-                        <?php $this->display_system_status(); ?>
-                    </div>
-                </div>
+<div class="wrap">
+    <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+    <div class="easy-checkout-admin-content">
+        <div class="postbox">
+            <h2 class="hndle"><?php _e('Easy Checkout Overview', 'easy-checkout'); ?></h2>
+            <div class="inside">
+                <p><?php _e('Easy Checkout simplifies your WooCommerce checkout process with advanced cart management and quantity controls.', 'easy-checkout'); ?>
+                </p>
+
+                <h3><?php _e('Features', 'easy-checkout'); ?></h3>
+                <ul>
+                    <li><?php _e('Simplified checkout form with only essential fields', 'easy-checkout'); ?></li>
+                    <li><?php _e('Real-time cart quantity controls', 'easy-checkout'); ?></li>
+                    <li><?php _e('AJAX-powered cart updates', 'easy-checkout'); ?></li>
+                    <li><?php _e('Mobile-responsive design', 'easy-checkout'); ?></li>
+                    <li><?php _e('HPOS (High-Performance Order Storage) compatible', 'easy-checkout'); ?></li>
+                </ul>
+
+                <p>
+                    <a href="<?php echo admin_url('admin.php?page=easy-checkout-settings'); ?>"
+                        class="button button-primary">
+                        <?php _e('Configure Settings', 'easy-checkout'); ?>
+                    </a>
+                </p>
             </div>
         </div>
-        <?php
+
+        <div class="postbox">
+            <h2 class="hndle"><?php _e('System Status', 'easy-checkout'); ?></h2>
+            <div class="inside">
+                <?php $this->display_system_status(); ?>
+            </div>
+        </div>
+    </div>
+</div>
+<?php
     }
     
     /**
@@ -97,17 +99,17 @@ class Easy_Checkout_Admin {
      */
     public function settings_page() {
         ?>
-        <div class="wrap">
-            <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-            <form method="post" action="options.php">
-                <?php
+<div class="wrap">
+    <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+    <form method="post" action="options.php">
+        <?php
                 settings_fields('easy_checkout_settings');
                 do_settings_sections('easy_checkout_settings');
                 submit_button();
                 ?>
-            </form>
-        </div>
-        <?php
+    </form>
+</div>
+<?php
     }
     
     /**
